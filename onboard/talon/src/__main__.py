@@ -49,15 +49,22 @@ class Rover:
         await self.talons[Talons.right_back.value].set_demand(
             Talons.right_front.value,
             talon_srx.TalonControlMode.kFollowerMode.value)
-        # set up joint_d to use PID profile 0
-        await self.talons[
-            Talons.arm_joint_d.value].set_profile_slot_select(0)
-        await self.talons[
-            Talons.arm_joint_d.value].set_param(
-                talon_srx.Param.ClearPositionOnLimitF.value, 1)
-        await self.talons[
-            Talons.arm_joint_d.value].set_param(
-                talon_srx.Param.ClearPositionOnLimitR.value, 1)
+        for t in [
+                RoverTalons.arm_joint_a.value,
+                RoverTalons.arm_joint_b.value,
+                RoverTalons.arm_joint_c.value,
+                RoverTalons.arm_joint_d.value,
+                RoverTalons.arm_joint_e.value,
+                RoverTalons.arm_joint_f.value]:
+            # TODO set PID constants
+            await self.talons[t].set_profile_slot_select(0)
+            await self.talons[t].set_param(
+                    talon_srx.Param.ClearPositionOnLimitR.value, 1)
+            await self.talons[t].set_param(
+                    talon_srx.Param.PeakPosOutput, 255)
+            await self.talons[t].set_param(
+                    talon_srx.Param.PeakNegOutput, -255)
+
         print('configured talons')
 
     async def percent_vbus_drive(self, talon, speed):
@@ -124,7 +131,6 @@ def set_demand_callback(channel, msg):
 async def publish_arm_encoders():
     while True:
         ec = Encoder()
-        '''
         ec.joint_a = int(
             await rover.talons[Talons.arm_joint_a.value].read_enc_value()
             or 0)
@@ -134,16 +140,15 @@ async def publish_arm_encoders():
         ec.joint_c = int(
             await rover.talons[Talons.arm_joint_c.value].read_enc_value()
             or 0)
-        '''
-        val = await rover.talons[
-            Talons.arm_joint_d.value].read_enc_value() or 0
-        val = max(min(val, 32767), -32768)
-        ec.joint_d = int(val)
-        '''
+        ec.joint_d = int(
+            await rover.talons[RoverTalons.arm_joint_d.value].read_enc_value()
+            or 0)
         ec.joint_e = int(
             await rover.talons[Talons.arm_joint_e.value].read_enc_value()
             or 0)
-        '''
+        ec.joint_f = int(
+            await rover.talons[RoverTalons.arm_joint_f.value].read_enc_value()
+            or 0)
 
         lcm_.publish('/encoder', ec.encode())
 
