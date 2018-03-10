@@ -1,4 +1,5 @@
 import click
+from click_didyoumean import DYMGroup
 import os
 import sys
 
@@ -31,8 +32,10 @@ def search_for_executable(bindir, name):
 pass_workspace = click.make_pass_decorator(Workspace)
 
 
-@click.group()
-@click.option('-w', '--workspace', envvar='JARVIS_WORKSPACE', default=None)
+@click.group(cls=DYMGroup)
+@click.option('-w', '--workspace',
+              envvar='JARVIS_WORKSPACE', default=None,
+              type=click.Path(exists=True))
 @click.pass_context
 def cli(ctx, workspace):
     '''
@@ -83,7 +86,7 @@ def exec(workspace, command):
     '''
     runs a command
 
-    The product env will be searched first, followed by the Jarvis env
+    The product env will be searched first, followed by the Jarvis env.
     '''
     if os.path.exists(workspace.product_env):
         executable = search_for_executable(os.path.join(

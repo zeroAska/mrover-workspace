@@ -103,6 +103,14 @@ def rm(path_: T.Union[os.PathLike, str]):
         os.unlink(path_)
 
 
+def ensure_dir(path_: T.Union[os.PathLike, str]):
+    """
+    Ensures that `path` exists.
+    """
+    if not os.path.exists(path_):
+        os.makedirs(path_)
+
+
 @contextmanager
 def cd(path_: T.Union[os.PathLike, str]):
     """
