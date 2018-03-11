@@ -4,6 +4,8 @@ import typing as T
 import os
 import shutil
 import click
+import jinja2
+import venv
 
 
 def exec_in_venv(env_path: T.Union[os.PathLike, str],
@@ -85,10 +87,10 @@ def ln(src: T.Union[os.PathLike, str], dest: T.Union[os.PathLike, str]):
     Make a symlink from `src` -> `dest`
     """
     click.secho('$ ln -s "{}" "{}"'.format(src, dest), dim=True)
-    if os.path.exists(src):
+    if os.path.exists(dest):
         return
-    if not os.path.islink(src):
-        os.unlink(src)
+    if os.path.exists(dest) and not os.path.islink(dest):
+        os.unlink(dest)
     os.symlink(src, dest)
 
 
@@ -105,7 +107,7 @@ def rm(path_: T.Union[os.PathLike, str]):
 
 def ensure_dir(path_: T.Union[os.PathLike, str]):
     """
-    Ensures that `path` exists.
+    Ensures that `path` is a directory.
     """
     if not os.path.exists(path_):
         os.makedirs(path_)
@@ -155,6 +157,18 @@ class Workspace:
         self.jarvis_env = os.path.join(self.build_root, 'jarvis_env')
         self.hash_store = os.path.join(self.build_root, 'project_hashes')
         self.intermediate = os.path.join(self.build_root, 'scratch')
+
+        self.templates = jinja2.Environment(loader=jinja2.FileSystemLoader(
+            os.path.join(self.root, 'jarvis_files', 'templates')))
+
+    def template(self, name, dest_file, **kwargs):
+        tpl = self.templates.get_template(name)
+        with open(dest_file, 'w') as f:
+            f.write(tpl.render(**kwargs))
+
+    def ensure_product_env(self):
+        if not os.path.isdir(self.product_env):
+            venv.create(self.product_env, symlinks=True, with_pip=True)
 
     def product_exec(self, command, **kwargs):
         try:

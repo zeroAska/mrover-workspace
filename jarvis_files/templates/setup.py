@@ -4,10 +4,8 @@ setup(
     name="{{ component }}",
     version="0.1",
     author="MRover",
-{% if src %}
-    package_dir={'': 'src'},
-{% endif %}
-    packages=find_packages({% if src %}'src'{% endif %}),
+    package_dir={'{{ component }}': 'src'},
+    packages=find_packages('src'),
 {% if executable %}
     entry_points={
         'console_scripts': [

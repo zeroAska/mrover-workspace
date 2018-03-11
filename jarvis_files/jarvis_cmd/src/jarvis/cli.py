@@ -2,7 +2,10 @@ import click
 from click_didyoumean import DYMGroup
 import os
 import sys
+import configparser
 
+import buildlib
+import buildlib.python
 from .core import Workspace
 
 
@@ -58,7 +61,42 @@ def build(workspace, project):
     '''
     build a project
     '''
-    pass
+    project_path = os.path.join(workspace.root, project)
+    if not (os.path.isdir(project_path) and os.path.exists(
+            os.path.join(project_path, 'project.ini'))):
+        click.secho("error: project '{}' does not exist".format(project),
+                    fg='red')
+        sys.exit(1)
+    project_name = os.path.normpath(project).replace('/', '_')
+
+    project_cfg_path = os.path.join(project_path, 'project.ini')
+    project_cfg = configparser.ConfigParser()
+    project_cfg['build'] = {}
+    project_cfg.read(project_cfg_path)
+
+    build_defs = project_cfg['build']
+    deps = [s.strip().rstrip()
+            for s in build_defs.get('deps', '').split(',')]
+    if len(deps) == 1 and deps[0] == '':
+        deps.pop()
+
+    # TODO recursively build `deps`
+
+    lang = build_defs.pop('lang', None)
+    if lang is None:
+        click.secho(
+                ("error: project '{}' does not"
+                 "have a specified language").format(project))
+        sys.exit(1)
+
+    # TODO Jarvis 2.2 will use build.py instead of project.ini
+    builder_constructor = buildlib.Builder
+    if lang == 'python':
+        builder_constructor = buildlib.python.PythonBuilder
+    builder = builder_constructor(workspace, project_path, project_name,
+                                  **build_defs)
+    builder.build()
+    click.secho('Done', fg='green')
 
 
 @cli.command()
@@ -79,7 +117,7 @@ def dep(workspace):
     pass
 
 
-@cli.command()
+@cli.command(short_help='runs a command')
 @click.argument('command', nargs=-1)
 @pass_workspace
 def exec(workspace, command):
@@ -102,3 +140,11 @@ def exec(workspace, command):
         return
 
     click.secho('error: cannot exec {}'.format(command), fg='red')
+
+
+@cli.command()
+def implode():
+    '''
+    destroys the temporary environments
+    '''
+    pass
